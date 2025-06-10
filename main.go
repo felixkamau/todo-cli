@@ -10,48 +10,62 @@ import (
 )
 
 func main() {
-	// Check args
-	if len(os.Args) < 3 {
-		fmt.Println("Usage: go run main.go <task_name> <status> [done]")
-		fmt.Println("Example: go run main.go \"Test code\" \"Pending\"")
-		fmt.Println("Example: go run main.go \"Fix bug\" \"in-progress\" done")
-		os.Exit(1) // Exit if not enough arguments
+	if len(os.Args) < 2 {
+		fmt.Println("Usage:")
+		fmt.Println("  Add a task: go run main.go add <task_name> <status> [done]")
+		fmt.Println("  List tasks: go run main.go list")
+		os.Exit(1)
 	}
 
-	// Parse cli args (this should be OUTSIDE the if block)
-	taskName := os.Args[1]
-	status := os.Args[2]
-	done := false
-
-	// Check if "done" flag is provided
-	if len(os.Args) > 3 && os.Args[3] == "done" {
-		done = true
-		status = "completed"
-	}
-
-	// create task
-	task := types.Task{
-		Name:   taskName,
-		Status: status,
-		Done:   done,
-	}
-
+	command := os.Args[1]
 	dbname := "./tasks.db"
 	sqlite3db, err := db.ConnectDB(dbname)
 	if err != nil {
 		log.Fatal("Error connecting to db:", err)
 	}
-
 	defer sqlite3db.Close()
 
-	// Create table
+	// Always ensure table exists
 	db.CreateTable(sqlite3db)
 
-	// Insert/add task
-	db.InsertTasks(sqlite3db, task)
+	switch command {
+	case "add":
+		if len(os.Args) < 4 {
+			fmt.Println("Usage: go run main.go add <task_name> <status> [done]")
+			return
+		}
+		taskName := os.Args[2]
+		status := os.Args[3]
+		done := len(os.Args) > 4 && os.Args[4] == "done"
+		if done {
+			status = "completed"
+		}
+		task := types.Task{
+			Name:   taskName,
+			Status: status,
+			Done:   done,
+		}
+		db.InsertTasks(sqlite3db, task)
+		fmt.Println("Task added successfully")
 
-	fmt.Println("Task added successfully")
-	fmt.Printf("Name: %s\n", task.Name)
-	fmt.Printf("Status: %s\n", task.Status)
-	fmt.Printf("Done: %t\n", task.Done)
+	case "list":
+		tasks, err := db.GetAllTasks(sqlite3db)
+		if err != nil {
+			log.Fatal("Error getting tasks:", err)
+		}
+		if len(tasks) == 0 {
+			fmt.Println("No tasks found.")
+			return
+		}
+		for _, task := range tasks {
+			doneStatus := "❌"
+			if task.Done {
+				doneStatus = "✅"
+			}
+			fmt.Printf("[%d] %s - %s %s\n", task.ID, task.Name, task.Status, doneStatus)
+		}
+
+	default:
+		fmt.Println("Unknown command:", command)
+	}
 }

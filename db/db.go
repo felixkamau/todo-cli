@@ -64,3 +64,25 @@ func InsertTasks(db *sql.DB, task types.Task) {
 		log.Fatal("Failed to insert task:", err)
 	}
 }
+
+func GetAllTasks(db *sql.DB) ([]types.Task, error) {
+	rows, err := db.Query("SELECT id, name, status, done FROM tasks")
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var tasks []types.Task
+
+	for rows.Next() {
+		var t types.Task
+		err := rows.Scan(&t.ID, &t.Name, &t.Status, &t.Done)
+		if err != nil {
+			log.Println("Error scanning row:", err)
+			continue
+		}
+		tasks = append(tasks, t)
+	}
+	return tasks, nil
+}
