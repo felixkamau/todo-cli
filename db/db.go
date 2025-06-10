@@ -9,7 +9,7 @@ import (
 )
 
 func ConnectDB(dbname string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./"+dbname)
+	db, err := sql.Open("sqlite3", dbname)
 
 	if err != nil {
 		log.Fatal(err)
