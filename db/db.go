@@ -86,3 +86,48 @@ func GetAllTasks(db *sql.DB) ([]types.Task, error) {
 	}
 	return tasks, nil
 }
+
+// TODOS
+// Implement
+// MarkDone()
+// DeleteTask()
+
+func MarkDone(db *sql.DB, taskid int) error {
+	updateSQL := `
+		UPDATE tasks 
+		SET done = 1 
+		WHERE id = ?
+	`
+	statement, err := db.Prepare(updateSQL)
+	if err != nil {
+		log.Fatal("Failed to prepare update statement:", err)
+		return err
+	}
+
+	defer statement.Close()
+
+	_, err = statement.Exec(taskid)
+	if err != nil {
+		log.Fatal("Failed to mark task as done:", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteTask(db *sql.DB, taskid int) error {
+	deleteSql := `
+		DELETE FROM tasks
+		WHERE id = ?
+	`
+	statement, err := db.Prepare(deleteSql)
+	if err != nil {
+		log.Fatalf("Failed to prepare delete statement: %v", err)
+		return err
+	}
+	defer statement.Close()
+	_, err = statement.Exec(taskid)
+	if err != nil {
+		log.Fatalf("Failed to delete task with id %d: %v", taskid, err)
+	}
+	return nil
+}
